@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 
 
 OBJETIVO_DE_VIDA = (
-    ('Aposentar', 'Aposentar'),
+    ('Aposentadoria', 'Aposentadoria'),
     ('Imovel', 'Imovel'),
     ('Viagens', 'Viagens'),
     ('Renda_passiva', 'Renda Passiva'),

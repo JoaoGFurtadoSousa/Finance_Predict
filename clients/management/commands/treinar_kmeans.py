@@ -3,16 +3,18 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
-from clients.models import Client
 
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
+from clients.models import Client
+
 
 class Command(BaseCommand):
 
-    help = "Treina o modelo KMeans para classificação de investidores"
+    help = "Treina o modelo KMeans"
 
     def handle(self, *args, **kwargs):
 
@@ -21,7 +23,7 @@ class Command(BaseCommand):
         if not clientes.exists():
             self.stdout.write(
                 self.style.ERROR(
-                    "Nenhum cliente encontrado na base."
+                    "Nenhum cliente encontrado."
                 )
             )
             return
@@ -44,7 +46,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"{len(df)} registros encontrados."
+                f"{len(df)} clientes encontrados."
             )
         )
 
@@ -63,11 +65,12 @@ class Command(BaseCommand):
         df["cluster"] = clusters
 
         medias = (
-            df.groupby("cluster")
+            df
+            .groupby("cluster")
             .mean(numeric_only=True)
         )
 
-        self.stdout.write("\nMédias por cluster:")
+        self.stdout.write("\n=== MÉDIAS DOS CLUSTERS ===")
         self.stdout.write(str(medias))
 
         ranking_clusters = []
@@ -88,16 +91,18 @@ class Command(BaseCommand):
             key=lambda item: item[1]
         )
 
-        mapa_clusters = {
+        cluster_mapping = {
             ranking_clusters[0][0]: "Conservador",
             ranking_clusters[1][0]: "Moderado",
             ranking_clusters[2][0]: "Agressivo"
         }
 
-        self.stdout.write("\nMapeamento encontrado:")
-        self.stdout.write(str(mapa_clusters))
+        self.stdout.write("\n=== MAPEAMENTO ===")
+        self.stdout.write(str(cluster_mapping))
 
-        for cliente in clientes:
+        clientes_list = list(clientes)
+
+        for cliente in clientes_list:
 
             amostra = [[
                 cliente.idade,
@@ -109,28 +114,33 @@ class Command(BaseCommand):
                 float(cliente.valor_desejado_acumulado)
             ]]
 
-            amostra = scaler.transform(amostra)
+            amostra = scaler.transform(
+                amostra
+            )
 
-            cluster = kmeans.predict(amostra)[0]
+            cluster = kmeans.predict(
+                amostra
+            )[0]
 
-            cliente.tipo_de_investidor = mapa_clusters[
-                cluster
-            ]
+            cliente.tipo_de_investidor = (
+                cluster_mapping[cluster]
+            )
 
         Client.objects.bulk_update(
-            clientes,
+            clientes_list,
             ["tipo_de_investidor"]
         )
 
-        models_dir = (
-            Path(__file__)
-            .resolve()
-            .parents[4]
-            / "ml_models"
-        )
+        models_dir = settings.BASE_DIR / "ml_models"
 
         models_dir.mkdir(
             exist_ok=True
+        )
+
+        self.stdout.write(
+            self.style.WARNING(
+                f"Salvando modelos em: {models_dir}"
+            )
         )
 
         joblib.dump(
@@ -144,7 +154,7 @@ class Command(BaseCommand):
         )
 
         joblib.dump(
-            mapa_clusters,
+            cluster_mapping,
             models_dir / "cluster_mapping.pkl"
         )
 
@@ -156,6 +166,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Arquivos salvos em: {models_dir}"
+                f"Arquivos criados em: {models_dir}"
             )
         )

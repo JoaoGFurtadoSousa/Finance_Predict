@@ -10,6 +10,12 @@ OBJETIVO_DE_VIDA = (
 )
 
 
+TIPOS_DE_INVESTIDOR = (
+    ('Conservador', 'Conservador'),
+    ('Moderado', 'Moderado'),
+    ('Agressivo', 'Agressivo')
+)
+
 
 class Client(models.Model):
     nome = models.CharField(max_length=150)
@@ -25,3 +31,5 @@ class Client(models.Model):
     tempo_estimado_retorno = models.IntegerField()
     valor_desejado_acumulado = models.DecimalField(max_digits= 15, decimal_places= 2)
     preocupacao_atual = models.CharField(max_length= 500)
+    tipo_de_investidor = models.CharField(choices= TIPOS_DE_INVESTIDOR, blank=True, null= True)
+    perfil_sintetico = models.CharField(max_length=20, null=True, blank=True)

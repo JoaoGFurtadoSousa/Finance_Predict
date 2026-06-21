@@ -14,7 +14,7 @@ class InvestorPredictor:
         self.features = joblib.load(base / "features.pkl")
         self.encoders = joblib.load(base / "encoders.pkl")
 
-    def _build_dataframe(self, cliente):
+    def build_features(self, cliente):
 
         exp_map = self.encoders["experiencia"]
         liq_map = self.encoders["liquidez"]
@@ -29,22 +29,6 @@ class InvestorPredictor:
             "horizonte": cliente.tempo_estimado_retorno,
         }])
 
-    # =========================
-    # USADO NO SIGNAL (OBRIGATÓRIO)
-    # =========================
     def predict(self, cliente):
-        df = self._build_dataframe(cliente)
+        df = self.build_features(cliente)
         return self.model.predict(df[self.features])[0]
-
-    # =========================
-    # OPCIONAL (DEBUG / API)
-    # =========================
-    def predict_proba(self, cliente):
-        df = self._build_dataframe(cliente)
-
-        proba = self.model.predict_proba(df[self.features])[0]
-
-        return {
-            self.model.classes_[i]: float(proba[i])
-            for i in range(len(proba))
-        }

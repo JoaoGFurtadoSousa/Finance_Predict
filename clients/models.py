@@ -51,3 +51,6 @@ class Client(models.Model):
     preocupacao_atual = models.CharField(max_length= 500)
     tipo_de_investidor = models.CharField(choices= TIPOS_DE_INVESTIDOR, blank=True, null= True)
     perfil_sintetico = models.CharField(max_length=20, null=True, blank=True)
+
+    def __str__(self):
+        return self.nome

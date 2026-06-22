@@ -1,44 +1,26 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_community.agent_toolkits import ini
+from langchain_classic.agents import initialize_agent, AgentType
+from langchain_core.prompts import PromptTemplate
+from langchain_core.tools import Tool
 from decouple import config
 
-# =========================
-# MODEL
-# =========================
+
 model = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
-    google_api_key=config("GEMINI_API_KEY")
+    google_api_key=config("GEMINI_API_KEY"))
+
+tools = [DuckDuckGoSearchRun()]
+
+agent = initialize_agent(tools= tools,
+                         llm= model,
+                         agent= AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+
+prompt_template = PromptTemplate.from_template(
+    template = '''Pesquise sobre o ETF {etf} e fale qual é o valor de mercado atual.'''
 )
 
-# =========================
-# TOOL (CORRETO)
-# =========================
-search = DuckDuckGoSearchRun()
+prompt = prompt_template.format(etf = 'BOVA11')
 
-tools = [
-    Tool(
-        name="search_etf",
-        func=search.run,
-        description="Busca ETFs negociados na B3 e informações financeiras"
-    )
-]
-
-# =========================
-# AGENT (ESTÁVEL NA SUA VERSÃO)
-# =========================
-agent = initialize_agent(
-    tools=tools,
-    llm=model,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True
-)
-
-# =========================
-# EXECUÇÃO
-# =========================
-response = agent.invoke({
-    "input": "Quais ETFs da B3 são bons para investidor conservador?"
-})
-
-print(response["output"])
+response = agent.invoke(prompt)
+print(response)

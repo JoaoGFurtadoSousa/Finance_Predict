@@ -79,16 +79,26 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('NAME_DB'),
-        'USER': config('USER_DB'),
-        'PASSWORD':config('PASSWORD_DB'),
-        'HOST': config('HOST_DB'),  
-        'PORT': config('PORT_DB'),    
+database_name = config('NAME_DB', default='')
+
+if database_name:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': database_name,
+            'USER': config('USER_DB'),
+            'PASSWORD': config('PASSWORD_DB'),
+            'HOST': config('HOST_DB'),
+            'PORT': config('PORT_DB'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 APPEND_SLASH = False
 

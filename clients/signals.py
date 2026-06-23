@@ -8,5 +8,4 @@ from .models import Client
 def categorizes_the_new_clients_investor_type(sender, instance, **kwargs):
     predict = InvestorPredictor()
     instance.tipo_de_investidor = predict.predict(instance)
-    print(instance)
-
+   

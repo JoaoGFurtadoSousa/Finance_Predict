@@ -13,9 +13,7 @@ model = ChatGoogleGenerativeAI(
 )
 
 
-# -----------------------------
-# TOOL: busca investimentos no banco
-# -----------------------------
+
 def busca_investimentos_conservadores(_input: str):
     investimentos = Investimento.objects.filter(risco__in=[1, 2])
 
@@ -28,18 +26,16 @@ def busca_investimentos_conservadores(_input: str):
     return "\n".join(resultado)
 
 
-# -----------------------------
-# AGENTE CONSERVADOR
-# -----------------------------
+
 def agente_conservador(cliente):
 
-    # 1. valida perfil
+
     if cliente.tipo_de_investidor.lower() != "conservador":
         return "Este agente é exclusivo para investidores conservadores."
 
     aporte = float(cliente.aporte_mensal)
+    
 
-    # 2. tools
     tool_investimentos = Tool(
         name="busca_investimentos_conservadores",
         func=busca_investimentos_conservadores,
@@ -48,38 +44,68 @@ def agente_conservador(cliente):
 
     tools = [tool_investimentos]
 
-    # 3. agente
+  
     agent = initialize_agent(
         tools=tools,
         llm=model,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True
+        verbose=True,
+        handle_parsing_errors=True
     )
 
     # 4. prompt estruturado
     prompt_template = PromptTemplate.from_template(
-        """
-Você é um consultor de investimentos para iniciantes.
-
-O usuário é CONSERVADOR e tem perfil de baixo risco.
-
-Aporte mensal: R$ {aporte}
-
-Sua tarefa:
-1. Use a tool para buscar investimentos conservadores
-2. Escolha os melhores investimentos de forma simples
-3. Distribua o aporte mensal entre eles
-4. Explique de forma muito simples, como se fosse para alguém iniciante
-5. Não use linguagem técnica complexa
-
-Formato da resposta:
-- Resumo simples
-- Lista de investimentos
-- Quanto investir em cada um
 """
-    )
+Você é um agente que deve obrigatoriamente seguir o formato ReAct.
 
-    prompt = prompt_template.format(aporte=aporte)
+Você possui acesso à ferramenta:
+busca_investimentos_conservadores
+
+Sempre utilize o seguinte formato:
+
+Thought: descreva o que você pretende fazer
+Action: busca_investimentos_conservadores
+Action Input: investimentos conservadores
+Observation: resultado da ferramenta
+
+Quando terminar utilize:
+
+Final Answer:
+Resumo da estratégia
+
+Carteira recomendada:
+- Nome do investimento
+- Valor recomendado para investir
+- Motivo da escolha
+
+Total investido: R$ {aporte}
+
+DADOS DO CLIENTE
+
+Perfil: Conservador
+Aporte: R$ {aporte}
+Reserva de emergência: {reserva_de_emergencia}
+Valor da reserva: {valor_armazenado_reserva_emergencia}
+Tolerância à volatilidade: {tolerancia_volatilidade}
+Experiência: {experiencia_em_investimentos}
+Perda máxima aceitável: {aceitacao_perda_percentual}
+Liquidez necessária: {liquidez_necessaria}
+Prazo esperado: {tempo_estimado_retorno}
+
+IMPORTANTE:
+- Utilize apenas investimentos retornados pela ferramenta.
+- Nunca invente investimentos.
+- Nunca pesquise na internet.
+"""
+)
+    prompt = prompt_template.format(aporte=aporte, 
+                                    reserva_de_emergencia = cliente.reserva_de_emergencia,
+                                    valor_armazenado_reserva_emergencia = cliente.valor_armazenado_reserva_emergencia,
+                                    tolerancia_volatilidade= cliente.tolerancia_volatilidade,
+                                    experiencia_em_investimentos= cliente.experiencia_em_investimentos,
+                                    aceitacao_perda_percentual= cliente.aceitacao_perda_percentual,
+                                    liquidez_necessaria= cliente.liquidez_necessaria,
+                                    tempo_estimado_retorno= cliente.tempo_estimado_retorno)
 
     # 5. execução
     response = agent.invoke(prompt)

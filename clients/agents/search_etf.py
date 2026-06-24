@@ -52,8 +52,8 @@ def retorna_valor_de_mercado_de_etfs_brasileiras():
 
 
     prompt = prompt_template.format(
-        tipo_investimento = "Cripto",
-        ticker = 'BTC')
+        tipo_investimento = "ETF",
+        ticker = 'PETR4')
 
 
     response = agent.invoke(prompt)
@@ -93,4 +93,4 @@ def retorna_valor_de_mercado_de_criptos():
     print(response['output'])
 
 if __name__ == '__main__':
-    retorna_valor_de_mercado_de_criptos()
+    retorna_valor_de_mercado_de_etfs_brasileiras()

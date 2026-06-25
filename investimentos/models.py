@@ -18,10 +18,7 @@ class PerfilInvestidor(models.Model):
 
 class ClasseAtivo(models.Model):
     nome = models.CharField(max_length=100)
-    perfil = models.ForeignKey(
-        PerfilInvestidor,
-        on_delete=models.CASCADE,
-        related_name="classes")
+    perfil = models.ForeignKey(PerfilInvestidor, on_delete=models.CASCADE, related_name="classes")
     risco = models.IntegerField()
     
     def __str__(self):
@@ -29,7 +26,7 @@ class ClasseAtivo(models.Model):
 
 
 class Investimento(models.Model):    
-    nome = models.CharField(max_length=100)
+    nome = models.CharField(max_length=100, unique= True)
     ticker = models.CharField(max_length=20, blank=True, null=True)
     tipo_investimento = models.ForeignKey(ClasseAtivo, on_delete=models.CASCADE)
     rentabilidade_anual = models.DecimalField(max_digits=6, decimal_places=2, help_text="Percentual médio anual")

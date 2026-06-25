@@ -2,16 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from clients.models import Client
 from rest_framework.response import Response
-from .serializers import SerializerEmailClient, SerializerClasseAtivo
-from .models import ClasseAtivo
+from .serializers import SerializerEmailClient, SerializerClasseAtivo, SerializerInvestimento
+from .models import ClasseAtivo, Investimento
+from .services.functions import calculo_reserva_de_emergencia
 from .agents.agente_conservador import agente_conservador
 from .agents.agente_moderado import agente_moderado
 from .agents.agente_agressivo import agente_agressivo
 
-
-def calculo_reserva_de_emergencia(salario:float):
-    salario *= 3
-    return salario
 
 
 class IndicaCarteiraView(APIView):
@@ -42,4 +39,10 @@ class IndicaCarteiraView(APIView):
 class ClasseAtivoView(ModelViewSet):
     queryset = ClasseAtivo.objects.all()
     serializer_class = SerializerClasseAtivo
+
+
+
+class InvestimentosView(ModelViewSet):
+    queryset = Investimento.objects.all()
+    serializer_class = SerializerInvestimento
             

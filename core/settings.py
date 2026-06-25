@@ -102,6 +102,23 @@ else:
 
 APPEND_SLASH = False
 
+redis_url = config("REDIS_URL", default="")
+CACHES = {
+    "default": (
+        {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": redis_url,
+        }
+        if redis_url
+        else {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "finance-predict-guardrails",
+        }
+    )
+}
+RATELIMIT_USE_CACHE = "default"
+RATELIMIT_FAIL_OPEN = False
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -142,3 +159,29 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "core.guardrails.exceptions.api_exception_handler",
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "validation_guardrails": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security_guardrails": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

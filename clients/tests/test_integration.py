@@ -15,7 +15,7 @@ class SerializerIntegrationTests(TestCase):
     def test_existing_fields_are_preserved_and_free_text_pii_is_removed(self):
         data = {
             "nome": "Maria",
-            "cpf": "12345678900",
+            "cpf": "52998224725",
             "email": "maria@example.com",
             "idade": 30,
             "renda_atual": "5000.00",
@@ -34,7 +34,7 @@ class SerializerIntegrationTests(TestCase):
         }
         serializer = ClientSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
-        self.assertEqual(serializer.validated_data["cpf"], "12345678900")
+        self.assertEqual(serializer.validated_data["cpf"], "52998224725")
         self.assertIn(
             "[CPF_REMOVIDO]", serializer.validated_data["preocupacao_atual"]
         )
@@ -45,7 +45,7 @@ class SerializerIntegrationTests(TestCase):
             partial=True,
         )
         self.assertFalse(serializer.is_valid())
-        self.assertIn("guardrail", serializer.errors)
+        self.assertIn("preocupacao_atual", serializer.errors)
 
 
 class EndpointCompatibilityTests(TestCase):
@@ -56,7 +56,7 @@ class EndpointCompatibilityTests(TestCase):
     def test_existing_create_endpoint_keeps_contract(self, _predict):
         data = {
             "nome": "Maria",
-            "cpf": "12345678900",
+            "cpf": "52998224725",
             "email": "maria.endpoint@example.com",
             "idade": 30,
             "renda_atual": "5000.00",

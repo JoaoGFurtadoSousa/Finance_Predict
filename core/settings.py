@@ -80,18 +80,45 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('NAME_DB'),
-        'USER': config('USER_DB'),
-        'PASSWORD':config('PASSWORD_DB'),
-        'HOST': config('HOST_DB'),  
-        'PORT': config('PORT_DB'),    
+database_name = config('NAME_DB', default='')
+
+if database_name:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': database_name,
+            'USER': config('USER_DB'),
+            'PASSWORD': config('PASSWORD_DB'),
+            'HOST': config('HOST_DB'),
+            'PORT': config('PORT_DB'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 APPEND_SLASH = False
+
+redis_url = config("REDIS_URL", default="")
+CACHES = {
+    "default": (
+        {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": redis_url,
+        }
+        if redis_url
+        else {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "finance-predict-guardrails",
+        }
+    )
+}
+RATELIMIT_USE_CACHE = "default"
+RATELIMIT_FAIL_OPEN = False
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -133,3 +160,29 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "core.guardrails.exceptions.api_exception_handler",
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "validation_guardrails": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security_guardrails": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

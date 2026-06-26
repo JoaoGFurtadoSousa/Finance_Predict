@@ -7,11 +7,8 @@ from .models import ClasseAtivo
 from .agents.agente_conservador import agente_conservador
 from .agents.agente_moderado import agente_moderado
 from .agents.agente_agressivo import agente_agressivo
+from .services.functions import calculo_reserva_de_emergencia
 
-
-def calculo_reserva_de_emergencia(salario:float):
-    salario *= 3
-    return salario
 
 
 class IndicaCarteiraView(APIView):
@@ -21,7 +18,7 @@ class IndicaCarteiraView(APIView):
         data = SerializerEmailClient(data = request.data)
         data.is_valid(raise_exception=True)
         client = Client.objects.get(email = data.validated_data['email'])
-
+        print(client.tipo_de_investidor)
         if client.reserva_de_emergencia == False:
             reserva_de_emergencia = calculo_reserva_de_emergencia(client.valor_armazenado_reserva_emergencia)
             return Response({'msg': f'Voce precisa de uma reserva de emergencia. O valor ideal é de {reserva_de_emergencia}'})

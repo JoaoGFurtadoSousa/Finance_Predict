@@ -59,7 +59,7 @@ def gerar_cliente(perfil: str):
     objetivo = {
         "Conservador": random.choice(["Preservacao", "Aposentadoria"]),
         "Moderado": random.choice(["Aposentadoria", "Imovel", "Viagens"]),
-        "Agressivo": random.choice(["Renda_passiva", "Acumulacao"]),
+        "Agressivo": "Renda_passiva",
     }[perfil]
 
     horizonte = {
@@ -95,10 +95,10 @@ def gerar_cliente(perfil: str):
         ),
 
         "preocupacao_atual": random.choice([
-            "Inflacao",
-            "Aposentadoria",
-            "Familia",
-            "Estabilidade",
+            "Preocupacao com a inflacao",
+            "Planejamento da aposentadoria",
+            "Seguranca financeira da familia",
+            "Busca por estabilidade financeira",
         ]),
 
         "tipo_de_investidor": perfil,

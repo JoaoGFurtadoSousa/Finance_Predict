@@ -8,7 +8,7 @@ from .agents.agente_conservador import agente_conservador
 from .agents.agente_moderado import agente_moderado
 from .agents.agente_agressivo import agente_agressivo
 from .services.functions import calculo_reserva_de_emergencia
-
+from django.http import StreamingHttpResponse 
 
 
 class IndicaCarteiraView(APIView):
@@ -27,11 +27,13 @@ class IndicaCarteiraView(APIView):
             response = agente_conservador(client)
             return Response({'msg': response})
         elif client.tipo_de_investidor == "Moderado":
-             response = agente_moderado(client)
-             return Response({'msg': response})
+            response = agente_moderado(client)
+            print(f'Response {response}')
+            return Response({'msg': response})
         else:
             response = agente_agressivo(client)
             return Response({'msg': response})
+        
             
 
 

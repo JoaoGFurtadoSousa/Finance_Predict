@@ -14,16 +14,16 @@ model = ChatGoogleGenerativeAI(
 
 
 
-
-
 def busca_investimentos_moderados(_input: str):
     investimentos = Investimento.objects.filter(risco__in=[2, 3])
 
-    resultado = []
-    for i in investimentos:
-        resultado.append(f"{i.nome} | risco {i.risco}")
-
-    return "\n".join(resultado)
+    return [
+        {
+            "nome": i.nome,
+            "risco": i.risco
+        }
+        for i in investimentos
+    ]
 
 
 def agente_moderado(cliente):
@@ -33,21 +33,19 @@ def agente_moderado(cliente):
 
     aporte = float(cliente.aporte_mensal)
 
-    tool_investimentos = Tool(
-        name="busca_investimentos_moderados",
+    tool = Tool(
+        name="busca_investimentos_agressivos",
         func=busca_investimentos_moderados,
-        description="Busca investimentos moderados (risco 2 e 3) do banco"
+        description="Retorna somente investimentos do banco"
     )
 
-    tools = [tool_investimentos]
-
     agent = initialize_agent(
-    tools=tools,
-    llm=model,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True
-)
+        tools=[tool],
+        llm=model,
+        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        handle_parsing_errors=True
+    )
 
     prompt_template = PromptTemplate.from_template(
     """Você é um agente que deve obrigatoriamente seguir o formato ReAct.
@@ -120,10 +118,10 @@ Evite concentração excessiva em um único ativo.
 Considere liquidez, volatilidade, rentabilidade e horizonte de investimento.
 Explique de forma simples para investidores iniciantes."""
     )
-
+    
     prompt = prompt_template.format(aporte=aporte, 
                                     reserva_de_emergencia = cliente.reserva_de_emergencia,
-                                    valor_armazenado_reserva_emergencia =cliente.valor_armazenado_reserva_emergencia,
+                                    valor_armazenado_reserva_emergencia = cliente.valor_armazenado_reserva_emergencia,
                                     tolerancia_volatilidade= cliente.tolerancia_volatilidade,
                                     experiencia_em_investimentos= cliente.experiencia_em_investimentos,
                                     aceitacao_perda_percentual= cliente.aceitacao_perda_percentual,

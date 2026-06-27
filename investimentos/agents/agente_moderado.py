@@ -4,8 +4,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from decouple import config
 
+from clients.services.email_service import safe_send_portfolio_email
 from investimentos.models import Investimento
-from investimentos.services.recommendation_audit_skill import audited_recommendation_text
+from investimentos.services.recommendation_audit_skill import audit_recommendation
 
 
 model = ChatGoogleGenerativeAI(
@@ -131,4 +132,9 @@ Explique de forma simples para investidores iniciantes."""
 
     response = agent.invoke(prompt)
 
-    return audited_recommendation_text(cliente, response["output"])
+    portfolio_text = response["output"]
+    audit_result = audit_recommendation(cliente, portfolio_text)
+    if audit_result["status"] == "approved":
+        safe_send_portfolio_email(cliente, portfolio_text)
+        return portfolio_text
+    return f"{portfolio_text}\n\n{audit_result['message']}"

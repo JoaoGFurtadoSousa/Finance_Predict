@@ -165,6 +165,15 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.guardrails.exceptions.api_exception_handler",
 }
 
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.locmem.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL",
+    default="no-reply@financepredict.local",
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

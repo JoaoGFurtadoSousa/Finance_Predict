@@ -1,4 +1,5 @@
 ﻿from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -51,11 +52,46 @@ class RecommendationAuditSkillTests(TestCase):
             experiencia_em_investimentos="Iniciante",
             aceitacao_perda_percentual=5,
             liquidez_necessaria="Imediata",
-            objetivo_de_vida="Preservacao",
+            objetivo_de_vida="Aposentadoria",
             tempo_estimado_retorno=3,
             valor_desejado_acumulado=Decimal("30000.00"),
             preocupacao_atual="Quero preservar capital no curto prazo.",
             tipo_de_investidor="Conservador",
+        )
+        self.aggressive_profile = PerfilInvestidor.objects.create(nome="Agressivo")
+        self.aggressive_class = ClasseAtivo.objects.create(
+            nome="Internacional",
+            perfil=self.profile,
+            risco=5,
+        )
+        Investimento.objects.create(
+            nome="Hashdex Crypto",
+            ticker="HASH11",
+            tipo_investimento=self.aggressive_class,
+            rentabilidade_anual=Decimal("18.00"),
+            volatilidade=Decimal("9.00"),
+            liquidez_dias=3,
+            risco=5,
+        )
+        self.aggressive_client = Client.objects.create(
+            nome="Joao Silva",
+            cpf="12345678909",
+            email="joao.audit@example.com",
+            idade=32,
+            renda_atual=Decimal("9000.00"),
+            aporte_mensal=Decimal("2000.00"),
+            reserva_de_emergencia=True,
+            valor_armazenado_reserva_emergencia=Decimal("15000.00"),
+            possui_dividas=False,
+            tolerancia_volatilidade=8,
+            experiencia_em_investimentos="Intermediario",
+            aceitacao_perda_percentual=25,
+            liquidez_necessaria="Longo_prazo",
+            objetivo_de_vida="Aposentadoria",
+            tempo_estimado_retorno=10,
+            valor_desejado_acumulado=Decimal("200000.00"),
+            preocupacao_atual="Quero crescer patrimonio no longo prazo.",
+            tipo_de_investidor="Agressivo",
         )
 
     def test_parser_extracts_investments_from_agent_text(self):
@@ -101,7 +137,7 @@ Valor recomendado para investir: R$ 500,00
 
     def test_audit_accepts_money_formats_with_and_without_currency_symbol(self):
         text = """
-Resumo da estratÃ©gia
+Resumo da estrategia
 
 Carteira recomendada:
 
@@ -122,10 +158,89 @@ Valor recomendado para investir: 500
         self.assertIn("ERRO DE AUDITORIA", audited)
         self.assertIn("representa 80%", audited)
 
+    def test_audit_does_not_flag_aggressive_asset_when_risk_is_allowed(self):
+        text = """
+Carteira recomendada:
+
+Nome do investimento: Hashdex Crypto
+Valor recomendado para investir: R$ 1000,00
+Motivo da escolha: Exposicao a crescimento.
+
+Nome do investimento: Hashdex Crypto
+Valor recomendado para investir: R$ 1000,00
+Motivo da escolha: Complementa a estrategia.
+""".strip()
+        result = audit_recommendation(self.aggressive_client, text)
+        self.assertEqual(result["status"], "approved")
+        self.assertEqual(result["inconsistencies"], [])
+
+    def test_audit_matches_investment_names_after_normalization(self):
+        text = """
+Carteira recomendada:
+
+Nome do investimento:   hashdex   crypto
+Valor recomendado para investir: R$ 1000,00
+Motivo da escolha: Exposicao a crescimento.
+
+Nome do investimento: Hashdex Crypto
+Valor recomendado para investir: R$ 1000,00
+Motivo da escolha: Complementa a estrategia.
+""".strip()
+        result = audit_recommendation(self.aggressive_client, text)
+        self.assertEqual(result["status"], "approved")
+        self.assertEqual(result["inconsistencies"], [])
+
+    @patch("investimentos.agents.agente_conservador.safe_send_portfolio_email")
+    @patch("investimentos.agents.agente_conservador.initialize_agent")
+    def test_agent_sends_email_after_approved_audit(
+        self, mock_initialize_agent, mock_send_email
+    ):
+        mock_initialize_agent.return_value.invoke.return_value = {
+            "output": self._valid_text()
+        }
+
+        from investimentos.agents.agente_conservador import agente_conservador
+
+        result = agente_conservador(self.client)
+
+        self.assertIn("Tesouro Selic", result)
+        mock_send_email.assert_called_once_with(self.client, self._valid_text())
+
+    @patch("investimentos.agents.agente_conservador.safe_send_portfolio_email")
+    @patch("investimentos.agents.agente_conservador.initialize_agent")
+    def test_agent_does_not_send_email_when_audit_fails(
+        self, mock_initialize_agent, mock_send_email
+    ):
+        invalid_text = self._valid_text().replace("R$ 500,00", "R$ 800,00", 1)
+        mock_initialize_agent.return_value.invoke.return_value = {
+            "output": invalid_text
+        }
+
+        from investimentos.agents.agente_conservador import agente_conservador
+
+        result = agente_conservador(self.client)
+
+        self.assertIn("ERRO DE AUDITORIA", result)
+        mock_send_email.assert_not_called()
+
+    @patch("clients.services.email_service.logger")
+    @patch("clients.services.email_service.send_portfolio_email")
+    def test_safe_email_delivery_failure_does_not_raise(
+        self, mock_send_portfolio_email, mock_logger
+    ):
+        from clients.services.email_service import safe_send_portfolio_email
+
+        mock_send_portfolio_email.side_effect = RuntimeError("smtp unavailable")
+
+        safe_send_portfolio_email(self.client, self._valid_text())
+
+        mock_send_portfolio_email.assert_called_once_with(self.client, self._valid_text())
+        mock_logger.exception.assert_called_once()
+
     @staticmethod
     def _valid_text():
         return """
-Resumo da estratÃ©gia
+Resumo da estrategia
 
 Carteira recomendada:
 

@@ -1,4 +1,5 @@
 ﻿import re
+import unicodedata
 from decimal import Decimal, InvalidOperation
 
 from investimentos.models import Investimento
@@ -95,13 +96,15 @@ def audit_recommendation(cliente, texto_carteira):
     inconsistencies = []
     total_recommended = Decimal("0.00")
     allowed_risks = PROFILE_ALLOWED_RISKS.get(cliente.tipo_de_investidor, set())
+    investments_by_name = {
+        _normalize_investment_name(investimento.nome): investimento
+        for investimento in Investimento.objects.all()
+    }
 
     for investment_data in parsed["investimentos"]:
         nome = investment_data["nome"]
         valor = _parse_money(investment_data["valor"])
-        investimento = Investimento.objects.filter(nome__iexact=nome).select_related(
-            "tipo_investimento__perfil"
-        ).first()
+        investimento = investments_by_name.get(_normalize_investment_name(nome))
 
         if investimento is None:
             inconsistencies.append(
@@ -111,15 +114,7 @@ def audit_recommendation(cliente, texto_carteira):
 
         if investimento.risco not in allowed_risks:
             inconsistencies.append(
-                f"O investimento {investimento.nome} possui risco incompativel com o perfil {cliente.tipo_de_investidor}."
-            )
-
-        perfil_do_investimento = getattr(
-            investimento.tipo_investimento.perfil, "nome", None
-        )
-        if perfil_do_investimento != cliente.tipo_de_investidor:
-            inconsistencies.append(
-                f"Foi recomendado um investimento incompativel com o perfil {cliente.tipo_de_investidor}."
+                f"O investimento {investimento.nome} possui risco {investimento.risco}, incompatível com o perfil {cliente.tipo_de_investidor}."
             )
 
         if valor is None:
@@ -229,3 +224,11 @@ def _build_audit_message(inconsistencies):
 
 def _clean_field_value(value):
     return str(value).strip().strip("-*• ").strip()
+
+
+def _normalize_investment_name(value):
+    normalized = unicodedata.normalize("NFKD", str(value or ""))
+    without_accents = "".join(
+        char for char in normalized if not unicodedata.combining(char)
+    )
+    return re.sub(r"\s+", " ", without_accents).strip().lower()

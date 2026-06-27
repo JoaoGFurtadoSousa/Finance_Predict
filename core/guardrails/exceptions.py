@@ -1,4 +1,4 @@
-"""Exceções e tradução consistente de erros para a API REST."""
+﻿"""Excecoes e traducao consistente de erros para a API REST."""
 
 import logging
 
@@ -21,7 +21,7 @@ class SecurityViolation(DjangoValidationError):
         self.field = field
         self.threat = threat
         super().__init__(
-            "Payload bloqueado por política de segurança.",
+            "Payload bloqueado por politica de seguranca.",
             code="blocked_payload",
         )
 
@@ -29,7 +29,7 @@ class SecurityViolation(DjangoValidationError):
 def security_error_detail(exc):
     return {
         "success": False,
-        "message": "Payload bloqueado por política de segurança.",
+        "message": "Payload bloqueado por politica de seguranca.",
         "code": "blocked_payload",
         **({"field": exc.field} if exc.field else {}),
     }
@@ -39,7 +39,9 @@ def _first_error(detail):
     if isinstance(detail, dict):
         field, value = next(iter(detail.items()))
         nested_field, message = _first_error(value)
-        return (field if field not in {"non_field_errors", "detail"} else nested_field), message
+        return (
+            field if field not in {"non_field_errors", "detail"} else nested_field
+        ), message
     if isinstance(detail, (list, tuple)) and detail:
         return _first_error(detail[0])
     return None, str(detail)
@@ -47,11 +49,13 @@ def _first_error(detail):
 
 def api_exception_handler(exc, context):
     if isinstance(exc, (Ratelimited, Throttled)):
-        logger.warning("blocked_payload", extra={"event": "rate_limit", "threat": "rate_limit"})
+        logger.warning(
+            "blocked_payload", extra={"event": "rate_limit", "threat": "rate_limit"}
+        )
         return Response(
             {
                 "success": False,
-                "message": "Limite de requisições excedido. Tente novamente em breve.",
+                "message": "Limite de requisicoes excedido. Tente novamente em breve.",
             },
             status=status.HTTP_429_TOO_MANY_REQUESTS,
         )
@@ -61,21 +65,24 @@ def api_exception_handler(exc, context):
         return None
 
     if isinstance(exc, DRFValidationError):
-        field, message = _first_error(response.data)
+        full_errors = response.data
+        field, message = _first_error(full_errors)
         logger.info(
             "validation_error",
             extra={"event": "validation_error", "field": field},
         )
-        if "Payload bloqueado por política de segurança." in message:
+        if "Payload bloqueado por politica de seguranca." in message or "Payload bloqueado por pol" in message:
             response.data = {
                 "success": False,
-                "message": "Payload bloqueado por política de segurança.",
+                "message": "Payload bloqueado por politica de seguranca.",
                 **({"field": field} if field else {}),
+                "errors": full_errors,
             }
         else:
             response.data = {
                 "success": False,
                 **({"field": field} if field else {}),
                 "message": message,
+                "errors": full_errors,
             }
     return response

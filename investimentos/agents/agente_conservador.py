@@ -5,6 +5,7 @@ from langchain_core.tools import Tool
 from decouple import config
 
 from investimentos.models import Investimento
+from investimentos.services.recommendation_audit_skill import audited_recommendation_text
 
 
 model = ChatGoogleGenerativeAI(
@@ -110,4 +111,4 @@ IMPORTANTE:
     # 5. execução
     response = agent.invoke(prompt)
 
-    return response["output"]
+    return audited_recommendation_text(cliente, response["output"])

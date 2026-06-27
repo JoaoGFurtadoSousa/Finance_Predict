@@ -17,8 +17,11 @@ OBJETIVO_DE_VIDA = (
     ("Aposentadoria", "Aposentadoria"),
     ("Imovel", "Imovel"),
     ("Viagens", "Viagens"),
-    ("Preservacao", "Preservacao"),
     ("Renda_passiva", "Renda Passiva"),
+    ("Educacao", "educacao"),
+    ('Protecao_patrimonial', 'Protecao_Patrimonial'),
+    ('Empreender', 'Empreender'),
+    ('Independencia_financeira', 'Independencia Financeira'),
 )
 
 EXPERIENCIA_EM_INVESTIMENTOS = (
@@ -91,7 +94,7 @@ class Client(models.Model):
         choices=LIQUIDEZ_NECESSARIA,
         default="Imediata",
     )
-    objetivo_de_vida = models.CharField(max_length=20, choices=OBJETIVO_DE_VIDA)
+    objetivo_de_vida = models.CharField(max_length=30, choices=OBJETIVO_DE_VIDA)
     tempo_estimado_retorno = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(100)]
     )

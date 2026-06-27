@@ -1,4 +1,4 @@
-from decimal import Decimal
+﻿from decimal import Decimal
 from unittest.mock import patch
 
 from django.core.cache import cache
@@ -29,7 +29,7 @@ def valid_payload(**overrides):
         "experiencia_em_investimentos": "Iniciante",
         "aceitacao_perda_percentual": 10,
         "liquidez_necessaria": "Imediata",
-        "objetivo_de_vida": "Preservacao",
+        "objetivo_de_vida": "Aposentadoria",
         "tempo_estimado_retorno": 5,
         "valor_desejado_acumulado": "20000.00",
         "preocupacao_atual": "Planejamento financeiro de curto prazo",
@@ -42,7 +42,7 @@ class SanitizerAndSecurityTests(SimpleTestCase):
     def test_normalizes_unicode_whitespace_and_invisible_characters(self):
         self.assertEqual(
             sanitize_text("  Jose\u0301\u200b   da\tSilva  "),
-            "José da Silva",
+            "Jose da Silva",
         )
 
     def test_validates_real_cpf_and_blocks_repeated_digits(self):
@@ -64,6 +64,12 @@ class SanitizerAndSecurityTests(SimpleTestCase):
 
 
 class SerializerBusinessRuleTests(TestCase):
+    def test_accepts_new_life_goal_choice(self):
+        serializer = ClientSerializer(
+            data=valid_payload(objetivo_de_vida="Protecao_patrimonial")
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
     def test_rejects_aporte_greater_than_income(self):
         serializer = ClientSerializer(
             data=valid_payload(aporte_mensal="6000.00")
@@ -124,10 +130,23 @@ class APIValidationTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data["success"], False)
         self.assertEqual(response.data["field"], "preocupacao_atual")
+        self.assertIn("errors", response.data)
         self.assertEqual(
             response.data["message"],
-            "Payload bloqueado por política de segurança.",
+            "Payload bloqueado por politica de seguranca.",
         )
+
+    def test_validation_error_returns_full_serializer_errors(self):
+        response = self.client.post(
+            "/api/v1/clients/",
+            valid_payload(experiencia_em_investimentos="Especialista"),
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["success"], False)
+        self.assertEqual(response.data["field"], "experiencia_em_investimentos")
+        self.assertIn("errors", response.data)
+        self.assertIn("experiencia_em_investimentos", response.data["errors"])
 
     def test_rate_limit_returns_429_after_ten_posts_per_ip(self):
         for _ in range(10):
